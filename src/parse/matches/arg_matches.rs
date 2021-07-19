@@ -40,8 +40,7 @@ pub(crate) struct SubCommand {
 ///         .takes_value(true))
 ///     .arg(Arg::new("debug")
 ///         .short('d')
-///         .takes_value(true)
-///         .multiple(true))
+///         .multiple_occurrences(true))
 ///     .arg(Arg::new("cfg")
 ///         .short('c')
 ///         .takes_value(true))
@@ -64,7 +63,7 @@ pub(crate) struct SubCommand {
 ///     // Another way to check if an argument was present, or if it occurred multiple times is to
 ///     // use occurrences_of() which returns 0 if an argument isn't found at runtime, or the
 ///     // number of times that it occurred, if it was. To allow an argument to appear more than
-///     // once, you must use the .multiple(true) method, otherwise it will only return 1 or 0.
+///     // once, you must use the .multiple_occurrences(true) method, otherwise it will only return 1 or 0.
 ///     if matches.occurrences_of("debug") > 2 {
 ///         println!("Debug mode is REALLY on, don't be crazy");
 ///     } else {
@@ -72,7 +71,7 @@ pub(crate) struct SubCommand {
 ///     }
 /// }
 /// ```
-/// [`App::get_matches`]: App::get_matches()
+/// [`App::get_matches`]: crate::App::get_matches()
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArgMatches {
     pub(crate) args: IndexMap<Id, MatchedArg>,
@@ -115,12 +114,11 @@ impl ArgMatches {
     ///
     /// assert_eq!(m.value_of("output"), Some("something"));
     /// ```
-    /// [option]: Arg::takes_value()
-    /// [positional]: Arg::index()
+    /// [option]: crate::Arg::takes_value()
+    /// [positional]: crate::Arg::index()
     /// [`ArgMatches::values_of`]: ArgMatches::values_of()
-    /// [`panic!`]: https://doc.rust-lang.org/std/macro.panic!.html
-    /// [`default_value`]: Arg::default_value()
-    /// [`occurrences_of`]: ArgMatches::occurrences_of()
+    /// [`default_value`]: crate::Arg::default_value()
+    /// [`occurrences_of`]: crate::ArgMatches::occurrences_of()
     pub fn value_of<T: Key>(&self, id: T) -> Option<&str> {
         if let Some(arg) = self.args.get(&Id::from(id)) {
             if let Some(v) = arg.get_val(0) {
@@ -136,7 +134,7 @@ impl ArgMatches {
     ///
     /// *NOTE:* If getting a value for an option or positional argument that allows multiples,
     /// prefer [`Arg::values_of_lossy`] as `value_of_lossy()` will only return the *first* value.
-    ///    
+    ///
     /// *NOTE:* This will always return `Some(value)` if [`default_value`] has been set.
     /// [`occurrences_of`] can be used to check if a value is present at runtime.
     ///
@@ -155,7 +153,7 @@ impl ArgMatches {
     ///                             OsString::from_vec(vec![b'H', b'i', b' ', 0xe9, b'!'])]);
     /// assert_eq!(&*m.value_of_lossy("arg").unwrap(), "Hi \u{FFFD}!");
     /// ```
-    /// [`default_value`]: Arg::default_value()
+    /// [`default_value`]: crate::Arg::default_value()
     /// [`occurrences_of`]: ArgMatches::occurrences_of()
     /// [`Arg::values_of_lossy`]: ArgMatches::values_of_lossy()
     pub fn value_of_lossy<T: Key>(&self, id: T) -> Option<Cow<'_, str>> {
@@ -195,9 +193,8 @@ impl ArgMatches {
     ///                             OsString::from_vec(vec![b'H', b'i', b' ', 0xe9, b'!'])]);
     /// assert_eq!(&*m.value_of_os("arg").unwrap().as_bytes(), [b'H', b'i', b' ', 0xe9, b'!']);
     /// ```
-    /// [`default_value`]: Arg::default_value()
+    /// [`default_value`]: crate::Arg::default_value()
     /// [`occurrences_of`]: ArgMatches::occurrences_of()
-    /// [`String`]: std::string::String
     /// [`ArgMatches::values_of_os`]: ArgMatches::values_of_os()
     pub fn value_of_os<T: Key>(&self, id: T) -> Option<&OsStr> {
         self.args
@@ -219,7 +216,7 @@ impl ArgMatches {
     /// # use clap::{App, Arg};
     /// let m = App::new("myprog")
     ///     .arg(Arg::new("output")
-    ///         .multiple(true)
+    ///         .multiple_values(true)
     ///         .short('o')
     ///         .takes_value(true))
     ///     .get_matches_from(vec![
@@ -366,6 +363,7 @@ impl ArgMatches {
     ///
     /// [`ArgMatches::values_of_t`]: ArgMatches::values_of_t()
     /// [`panic!`]: https://doc.rust-lang.org/std/macro.panic!.html
+    /// [`ErrorKind`]: crate::ErrorKind
     pub fn value_of_t<R>(&self, name: &str) -> Result<R, Error>
     where
         R: FromStr,
@@ -536,16 +534,10 @@ impl ArgMatches {
     /// assert!(m.is_present("debug"));
     /// ```
     ///
-    /// [`default_value`]: Arg::default_value()
+    /// [`default_value`]: crate::Arg::default_value()
     /// [`occurrences_of`]: ArgMatches::occurrences_of()
     pub fn is_present<T: Key>(&self, id: T) -> bool {
         let id = Id::from(id);
-
-        if let Some(ref sc) = self.subcommand {
-            if sc.id == id {
-                return true;
-            }
-        }
         self.args.contains_key(&id)
     }
 
@@ -689,8 +681,7 @@ impl ArgMatches {
     ///         .short('z'))
     ///     .arg(Arg::new("option")
     ///         .short('o')
-    ///         .takes_value(true)
-    ///         .multiple(true))
+    ///         .takes_value(true))
     ///     .get_matches_from(vec!["myapp", "-fzFoval"]);
     ///             // ARGV idices: ^0       ^1
     ///             // clap idices:          ^1,2,3^5
@@ -710,9 +701,8 @@ impl ArgMatches {
     /// let m = App::new("myapp")
     ///     .arg(Arg::new("option")
     ///         .short('o')
-    ///         .takes_value(true)
     ///         .use_delimiter(true)
-    ///         .multiple(true))
+    ///         .multiple_values(true))
     ///     .get_matches_from(vec!["myapp", "-o=val1,val2,val3"]);
     ///             // ARGV idices: ^0       ^1
     ///             // clap idices:             ^2   ^3   ^4
@@ -722,7 +712,7 @@ impl ArgMatches {
     /// assert_eq!(m.index_of("option"), Some(2));
     /// assert_eq!(m.indices_of("option").unwrap().collect::<Vec<_>>(), &[2, 3, 4]);
     /// ```
-    /// [delimiter]: Arg::value_delimiter()
+    /// [delimiter]: crate::Arg::value_delimiter()
     pub fn index_of<T: Key>(&self, name: T) -> Option<usize> {
         if let Some(arg) = self.args.get(&Id::from(name)) {
             if let Some(i) = arg.get_index(0) {
@@ -750,9 +740,8 @@ impl ArgMatches {
     /// let m = App::new("myapp")
     ///     .arg(Arg::new("option")
     ///         .short('o')
-    ///         .takes_value(true)
     ///         .use_delimiter(true)
-    ///         .multiple(true))
+    ///         .multiple_values(true))
     ///     .get_matches_from(vec!["myapp", "-o=val1,val2,val3"]);
     ///             // ARGV idices: ^0       ^1
     ///             // clap idices:             ^2   ^3   ^4
@@ -770,7 +759,7 @@ impl ArgMatches {
     ///     .arg(Arg::new("option")
     ///         .short('o')
     ///         .takes_value(true)
-    ///         .multiple(true))
+    ///         .multiple_occurrences(true))
     ///     .arg(Arg::new("flag")
     ///         .short('f')
     ///         .multiple_occurrences(true))
@@ -793,7 +782,7 @@ impl ArgMatches {
     ///     .arg(Arg::new("option")
     ///         .short('o')
     ///         .takes_value(true)
-    ///         .multiple(true))
+    ///         .multiple_values(true))
     ///     .get_matches_from(vec!["myapp", "-o=val1,val2,val3"]);
     ///             // ARGV idices: ^0       ^1
     ///             // clap idices:             ^2
@@ -838,7 +827,9 @@ impl ArgMatches {
     ///     assert_eq!(sub_m.value_of("opt"), Some("val"));
     /// }
     /// ```
-    /// [`Subcommand`]: ./struct..html
+    ///
+    /// [`Subcommand`]: crate::Subcommand
+    /// [`App`]: crate::App
     pub fn subcommand_matches<T: Key>(&self, id: T) -> Option<&ArgMatches> {
         if let Some(ref s) = self.subcommand {
             if s.id == id.into() {
@@ -903,7 +894,8 @@ impl ArgMatches {
     ///     _              => {}, // Either no subcommand or one not tested for...
     /// }
     /// ```
-    /// [`Subcommand`]: ./struct..html
+    /// [`Subcommand`]: crate::Subcommand
+    /// [`App`]: crate::App
     #[inline]
     pub fn subcommand_name(&self) -> Option<&str> {
         self.subcommand.as_ref().map(|sc| &*sc.name)
@@ -977,7 +969,7 @@ impl ArgMatches {
 /// let m = App::new("myapp")
 ///     .arg(Arg::new("output")
 ///         .short('o')
-///         .multiple(true)
+///         .multiple_values(true)
 ///         .takes_value(true))
 ///     .get_matches_from(vec!["myapp", "-o", "val1", "val2"]);
 ///
@@ -1126,7 +1118,7 @@ impl Default for OsValues<'_> {
 /// let m = App::new("myapp")
 ///     .arg(Arg::new("output")
 ///         .short('o')
-///         .multiple(true)
+///         .multiple_values(true)
 ///         .takes_value(true))
 ///     .get_matches_from(vec!["myapp", "-o", "val1", "val2"]);
 ///

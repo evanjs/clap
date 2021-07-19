@@ -15,6 +15,7 @@ TODO: `cargo`, `std` features
 * **Removed Methods**
   * **Arg**
     * `Arg::settings` in favor of `Arg::setting(Setting1 | Setting2)`
+    * `Arg::multiple` in favour of `Arg::multiple_values` and `Arg::multiple_occurrences`
 * **Renamed Settings**
   * `AppSettings::DisableHelpFlags` => `AppSettings::DisableHelpFlag`
   * `AppSettings::DisableVersion` => `AppSettings::DisableVersionFlag`
@@ -33,6 +34,7 @@ TODO: `cargo`, `std` features
   * `Arg::default_value_if`, `Arg::default_value_if_os`, `Arg::default_value_ifs`,
     `Arg::default_value_ifs_os` now takes the default value parameter as an option
   * `Arg::index`, `Arg::number_of_values`, `Arg::min_values`, `Arg::max_values` now takes `usize`
+  * `ArgMatches::is_present` does not handle subcommand names anymore
   * `@group` in `clap_app!` now needs `:` instead of `=>`
 
 #### Features

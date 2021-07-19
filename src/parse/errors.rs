@@ -54,7 +54,7 @@ pub enum ErrorKind {
     /// ```
     UnknownArgument,
 
-    /// Occurs when the user provides an unrecognized [``] which meets the threshold for
+    /// Occurs when the user provides an unrecognized [`Subcommand`] which meets the threshold for
     /// being similar enough to an existing subcommand.
     /// If it doesn't meet the threshold, or the 'suggestions' feature is disabled,
     /// the more general [`UnknownArgument`] error is returned.
@@ -74,11 +74,12 @@ pub enum ErrorKind {
     /// assert!(result.is_err());
     /// assert_eq!(result.unwrap_err().kind, ErrorKind::InvalidSubcommand);
     /// ```
-    /// [``]: ./struct..html
+    ///
+    /// [`Subcommand`]: crate::Subcommand
     /// [`UnknownArgument`]: ErrorKind::UnknownArgument
     InvalidSubcommand,
 
-    /// Occurs when the user provides an unrecognized [``] which either
+    /// Occurs when the user provides an unrecognized [`Subcommand`] which either
     /// doesn't meet the threshold for being similar enough to an existing subcommand,
     /// or the 'suggestions' feature is disabled.
     /// Otherwise the more detailed [`InvalidSubcommand`] error is returned.
@@ -100,7 +101,8 @@ pub enum ErrorKind {
     /// assert!(result.is_err());
     /// assert_eq!(result.unwrap_err().kind, ErrorKind::UnrecognizedSubcommand);
     /// ```
-    /// [``]: ./struct..html
+    ///
+    /// [`Subcommand`]: crate::Subcommand
     /// [`InvalidSubcommand`]: ErrorKind::InvalidSubcommand
     /// [`UnknownArgument`]: ErrorKind::UnknownArgument
     UnrecognizedSubcommand,
@@ -171,8 +173,6 @@ pub enum ErrorKind {
     /// # use clap::{App, Arg, ErrorKind};
     /// let result = App::new("prog")
     ///     .arg(Arg::new("arg")
-    ///         .takes_value(true)
-    ///         .multiple(true)
     ///         .max_values(2))
     ///     .try_get_matches_from(vec!["prog", "too", "many", "values"]);
     /// assert!(result.is_err());
@@ -198,6 +198,24 @@ pub enum ErrorKind {
     /// ```
     /// [`Arg::min_values`]: Arg::min_values()
     TooFewValues,
+
+    /// Occurs when a user provides more occurrences for an argument than were defined by setting
+    /// [`Arg::max_occurrences`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use clap::{App, Arg, ErrorKind};
+    /// let result = App::new("prog")
+    ///     .arg(Arg::new("verbosity")
+    ///         .short('v')
+    ///         .max_occurrences(2))
+    ///     .try_get_matches_from(vec!["prog", "-vvv"]);
+    /// assert!(result.is_err());
+    /// assert_eq!(result.unwrap_err().kind, ErrorKind::TooManyOccurrences);
+    /// ```
+    /// [`Arg::max_occurrences`]: Arg::max_occurrences()
+    TooManyOccurrences,
 
     /// Occurs when the user provides a different number of values for an argument than what's
     /// been defined by setting [`Arg::number_of_values`] or than was implicitly set by
@@ -272,6 +290,8 @@ pub enum ErrorKind {
     /// assert_eq!(err.unwrap_err().kind, ErrorKind::MissingSubcommand);
     /// # ;
     /// ```
+    ///
+    /// [`AppSettings::SubcommandRequired`]: crate::AppSettings::SubcommandRequired
     MissingSubcommand,
 
     /// Occurs when the user provides multiple values to an argument which doesn't allow that.
@@ -283,7 +303,7 @@ pub enum ErrorKind {
     /// let result = App::new("prog")
     ///     .arg(Arg::new("debug")
     ///         .long("debug")
-    ///         .multiple(false))
+    ///         .multiple_occurrences(false))
     ///     .try_get_matches_from(vec!["prog", "--debug", "--debug"]);
     /// assert!(result.is_err());
     /// assert_eq!(result.unwrap_err().kind, ErrorKind::UnexpectedMultipleUsage);
@@ -315,6 +335,8 @@ pub enum ErrorKind {
     /// assert!(result.is_err());
     /// assert_eq!(result.unwrap_err().kind, ErrorKind::InvalidUtf8);
     /// ```
+    ///
+    /// [`AppSettings::StrictUtf8`]: crate::AppSettings::StrictUtf8
     InvalidUtf8,
 
     /// Not a true "error" as it means `--help` or similar was used.
@@ -334,7 +356,7 @@ pub enum ErrorKind {
     /// ```
     DisplayHelp,
 
-    /// Occurs when either an argument or a [`subcommand`] is required, as defined by
+    /// Occurs when either an argument or a [`Subcommand`] is required, as defined by
     /// [`AppSettings::ArgRequiredElseHelp`] and
     /// [`AppSettings::SubcommandRequiredElseHelp`], but the user did not provide
     /// one.
@@ -353,7 +375,10 @@ pub enum ErrorKind {
     /// assert!(result.is_err());
     /// assert_eq!(result.unwrap_err().kind, ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand);
     /// ```
-    /// [`subcommand`]: App::subcommand()
+    ///
+    /// [`Subcommand`]: crate::Subcommand
+    /// [`AppSettings::ArgRequiredElseHelp`]: crate::AppSettings::ArgRequiredElseHelp
+    /// [`AppSettings::SubcommandRequiredElseHelp`]: crate::AppSettings::SubcommandRequiredElseHelp
     DisplayHelpOnMissingArgumentOrSubcommand,
 
     /// Not a true "error" as it means `--version` or similar was used.
@@ -374,7 +399,7 @@ pub enum ErrorKind {
     /// into type `T`, but the argument you requested wasn't used. I.e. you asked for an argument
     /// with name `config` to be converted, but `config` wasn't used by the user.
     ///
-    /// [`ArgMatches::value_of_t`]: ArgMatches::value_of_t()
+    /// [`ArgMatches::value_of_t`]: crate::ArgMatches::value_of_t()
     ArgumentNotFound,
 
     /// Represents an [I/O error].
@@ -401,7 +426,7 @@ pub struct Error {
     /// Additional information depending on the error kind, like values and argument names.
     /// Useful when you want to render an error of your own.
     pub info: Vec<String>,
-    pub(crate) source: Option<Box<dyn error::Error + Send + Sync>>,
+    pub(crate) source: Option<Box<dyn error::Error>>,
 }
 
 impl Display for Error {
@@ -739,6 +764,38 @@ impl Error {
         }
     }
 
+    pub(crate) fn too_many_occurrences(
+        arg: &Arg,
+        max_occurs: usize,
+        curr_occurs: usize,
+        usage: String,
+        color: ColorChoice,
+    ) -> Self {
+        let mut c = Colorizer::new(true, color);
+        let verb = Error::singular_or_plural(curr_occurs);
+
+        start_error(&mut c, "The argument '");
+        c.warning(arg.to_string());
+        c.none("' allows at most ");
+        c.warning(max_occurs.to_string());
+        c.none(" occurrences, but ");
+        c.warning(curr_occurs.to_string());
+        c.none(format!(" {} provided", verb));
+        put_usage(&mut c, usage);
+        try_help(&mut c);
+
+        Error {
+            message: c,
+            kind: ErrorKind::TooManyOccurrences,
+            info: vec![
+                arg.to_string(),
+                curr_occurs.to_string(),
+                max_occurs.to_string(),
+            ],
+            source: None,
+        }
+    }
+
     pub(crate) fn too_many_values(
         val: String,
         arg: &Arg,
@@ -794,7 +851,7 @@ impl Error {
     pub(crate) fn value_validation(
         arg: String,
         val: String,
-        err: Box<dyn error::Error + Send + Sync>,
+        err: Box<dyn error::Error>,
         color: ColorChoice,
     ) -> Self {
         let mut c = Colorizer::new(true, color);
@@ -981,10 +1038,6 @@ impl From<fmt::Error> for Error {
 
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        if let Some(source) = self.source.as_deref() {
-            Some(source)
-        } else {
-            None
-        }
+        self.source.as_deref()
     }
 }

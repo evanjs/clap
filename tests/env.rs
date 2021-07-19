@@ -1,7 +1,7 @@
 use std::env;
 use std::ffi::OsStr;
 
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 
 #[test]
 fn env() {
@@ -189,7 +189,7 @@ fn multiple_one() {
                 .env("CLP_TEST_ENV_MO")
                 .takes_value(true)
                 .use_delimiter(true)
-                .multiple(true),
+                .multiple_values(true),
         )
         .try_get_matches_from(vec![""]);
 
@@ -210,7 +210,7 @@ fn multiple_three() {
                 .env("CLP_TEST_ENV_MULTI1")
                 .takes_value(true)
                 .use_delimiter(true)
-                .multiple(true),
+                .multiple_values(true),
         )
         .try_get_matches_from(vec![""]);
 
@@ -233,7 +233,7 @@ fn multiple_no_delimiter() {
             Arg::from("[arg] 'some opt'")
                 .env("CLP_TEST_ENV_MULTI2")
                 .takes_value(true)
-                .multiple(true),
+                .multiple_values(true),
         )
         .try_get_matches_from(vec![""]);
 
@@ -345,4 +345,24 @@ fn validator_invalid() {
         .try_get_matches_from(vec![""]);
 
     assert!(r.is_err());
+}
+
+#[test]
+fn env_disabled() {
+    env::set_var("CLP_TEST_DISABLE_ENV", "env");
+
+    let r = App::new("df")
+        .arg(
+            Arg::from("[arg] 'some opt'")
+                .env("CLP_TEST_DISABLE_ENV")
+                .takes_value(true),
+        )
+        .setting(AppSettings::DisableEnv)
+        .try_get_matches_from(vec![""]);
+
+    assert!(r.is_ok());
+    let m = r.unwrap();
+    assert!(!m.is_present("arg"));
+    assert_eq!(m.occurrences_of("arg"), 0);
+    assert_eq!(m.value_of("arg"), None);
 }

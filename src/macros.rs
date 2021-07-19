@@ -246,7 +246,8 @@ macro_rules! app_from_crate {
 ///
 /// * A single hyphen followed by a character (such as `-c`) sets the [`Arg::short`]
 /// * A double hyphen followed by a character or word (such as `--config`) sets [`Arg::long`]
-/// * Three dots (`...`) sets [`Arg::multiple(true)`]
+/// * Three dots (`...`) sets [`Arg::multiple_values(true)`]
+/// * Three dots (`...`) sets [`Arg::multiple_occurrences(true)`]
 /// * Angled brackets after either a short or long will set [`Arg::value_name`] and
 /// `Arg::required(true)` such as `--config <FILE>` = `Arg::value_name("FILE")` and
 /// `Arg::required(true)`
@@ -285,14 +286,15 @@ macro_rules! app_from_crate {
 /// * `(@arg "something-else": --"something-else")`
 /// * `(@subcommand "something-else" => ...)`
 ///
-/// [`Arg::short`]: Arg::short()
-/// [`Arg::long`]: Arg::long()
-/// [`Arg::multiple(true)`]: Arg::multiple()
-/// [`Arg::value_name`]: Arg::value_name()
-/// [`Arg::min_values(min)`]: Arg::min_values()
-/// [`Arg::max_values(max)`]: Arg::max_values()
-/// [`Arg::validator`]: Arg::validator()
-/// [`Arg::conflicts_with`]: Arg::conflicts_with()
+/// [`Arg::short`]: crate::Arg::short()
+/// [`Arg::long`]: crate::Arg::long()
+/// [`Arg::multiple_values(true)`]: crate::Arg::multiple_values()
+/// [`Arg::multiple_occurrences(true)`]: crate::Arg::multiple_occurrences()
+/// [`Arg::value_name`]: crate::Arg::value_name()
+/// [`Arg::min_values(min)`]: crate::Arg::min_values()
+/// [`Arg::max_values(max)`]: crate::Arg::max_values()
+/// [`Arg::validator`]: crate::Arg::validator()
+/// [`Arg::conflicts_with`]: crate::Arg::conflicts_with()
 #[macro_export]
 macro_rules! clap_app {
     (@app ($builder:expr)) => { $builder };
@@ -461,7 +463,7 @@ macro_rules! clap_app {
         $crate::clap_app!{ @arg ($arg.value_name(stringify!($var))) (+) $($tail)* }
     };
     (@arg ($arg:expr) $modes:tt ... $($tail:tt)*) => {
-        $crate::clap_app!{ @arg ($arg) $modes +multiple +takes_value $($tail)* }
+        $crate::clap_app!{ @arg ($arg) $modes +multiple_values +takes_value $($tail)* }
     };
     // Shorthand magic
     (@arg ($arg:expr) $modes:tt #{$n:expr, $m:expr} $($tail:tt)*) => {
@@ -484,7 +486,7 @@ macro_rules! clap_app {
     };
     (@as_expr $expr:expr) => { $expr };
     // Help
-    (@arg ($arg:expr) $modes:tt $desc:tt) => { $arg.about(clap_app!{ @as_expr $desc }) };
+    (@arg ($arg:expr) $modes:tt $desc:tt) => { $arg.about($crate::clap_app!{ @as_expr $desc }) };
     // Handle functions that need to be called multiple times for each argument
     (@arg ($arg:expr) $modes:tt $ident:ident[$($target:literal)*] $($tail:tt)*) => {
         $crate::clap_app!{ @arg ($arg $( .$ident(stringify!($target).trim_matches('"')) )*) $modes $($tail)* }

@@ -149,21 +149,15 @@ impl<'help, 'app, 'parser> Usage<'help, 'app, 'parser> {
             let placeholder = self.p.app.subcommand_placeholder.unwrap_or("SUBCOMMAND");
             if self.p.is_set(AS::SubcommandsNegateReqs) || self.p.is_set(AS::ArgsNegateSubcommands)
             {
+                usage.push_str("\n    ");
                 if !self.p.is_set(AS::ArgsNegateSubcommands) {
-                    usage.push_str("\n    ");
                     usage.push_str(&*self.create_help_usage(false));
-
-                    usage.push_str(" <");
-                    usage.push_str(placeholder);
-                    usage.push('>');
                 } else {
-                    usage.push_str("\n    ");
                     usage.push_str(&*name);
-
-                    usage.push_str(" <");
-                    usage.push_str(placeholder);
-                    usage.push('>');
                 }
+                usage.push_str(" <");
+                usage.push_str(placeholder);
+                usage.push('>');
             } else if self.p.is_set(AS::SubcommandRequired)
                 || self.p.is_set(AS::SubcommandRequiredElseHelp)
             {
@@ -384,7 +378,7 @@ impl<'help, 'app, 'parser> Usage<'help, 'app, 'parser> {
         let mut unrolled_reqs = vec![];
 
         for a in self.p.required.iter() {
-            if let Some(ref m) = matcher {
+            if let Some(m) = matcher {
                 for aa in self.p.app.unroll_requirements_for_arg(a, m) {
                     unrolled_reqs.push(aa);
                 }
@@ -408,6 +402,43 @@ impl<'help, 'app, 'parser> Usage<'help, 'app, 'parser> {
             .flat_map(|g| self.p.app.unroll_args_in_group(&g.id))
             .collect::<Vec<_>>();
 
+        for a in unrolled_reqs
+            .iter()
+            .chain(incls.iter())
+            .filter(|name| !self.p.app.get_positionals().any(|p| &&p.id == name))
+            .filter(|name| !self.p.app.groups.iter().any(|g| &&g.id == name))
+            .filter(|name| !args_in_groups.contains(name))
+            .filter(|name| !(matcher.is_some() && matcher.as_ref().unwrap().contains(name)))
+        {
+            debug!("Usage::get_required_usage_from:iter:{:?}", a);
+            let arg = self.p.app.find(a).expect(INTERNAL_ERROR_MSG).to_string();
+            ret_val.push(arg);
+        }
+        let mut g_vec: Vec<String> = vec![];
+        for g in unrolled_reqs
+            .iter()
+            .filter(|n| self.p.app.groups.iter().any(|g| g.id == **n))
+        {
+            // don't print requirement for required groups that have an arg.
+            if let Some(m) = matcher {
+                let have_group_entry = self
+                    .p
+                    .app
+                    .unroll_args_in_group(g)
+                    .iter()
+                    .any(|arg| m.contains(arg));
+                if have_group_entry {
+                    continue;
+                }
+            }
+
+            let elem = self.p.app.format_group(g);
+            if !g_vec.contains(&elem) {
+                g_vec.push(elem);
+            }
+        }
+        ret_val.extend_from_slice(&g_vec);
+
         let pmap = unrolled_reqs
             .iter()
             .chain(incls.iter())
@@ -424,49 +455,6 @@ impl<'help, 'app, 'parser> Usage<'help, 'app, 'parser> {
             if !args_in_groups.contains(&p.id) {
                 ret_val.push(p.to_string());
             }
-        }
-        for a in unrolled_reqs
-            .iter()
-            .chain(incls.iter())
-            .filter(|name| !self.p.app.get_positionals().any(|p| &&p.id == name))
-            .filter(|name| !self.p.app.groups.iter().any(|g| &&g.id == name))
-            .filter(|name| !args_in_groups.contains(name))
-            .filter(|name| !(matcher.is_some() && matcher.as_ref().unwrap().contains(name)))
-        {
-            debug!("Usage::get_required_usage_from:iter:{:?}", a);
-            let arg = self
-                .p
-                .app
-                .find(&a)
-                .map(ToString::to_string)
-                .expect(INTERNAL_ERROR_MSG);
-            ret_val.push(arg);
-        }
-        let mut g_vec: Vec<String> = vec![];
-        for g in unrolled_reqs
-            .iter()
-            .filter(|n| self.p.app.groups.iter().any(|g| g.id == **n))
-        {
-            // don't print requirement for required groups that have an arg.
-            if let Some(m) = matcher {
-                let have_group_entry = self
-                    .p
-                    .app
-                    .unroll_args_in_group(&g)
-                    .iter()
-                    .any(|arg| m.contains(&arg));
-                if have_group_entry {
-                    continue;
-                }
-            }
-
-            let elem = self.p.app.format_group(g);
-            if !g_vec.contains(&elem) {
-                g_vec.push(elem);
-            }
-        }
-        for g in g_vec {
-            ret_val.push(g);
         }
 
         debug!("Usage::get_required_usage_from: ret_val={:?}", ret_val);

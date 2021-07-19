@@ -9,7 +9,7 @@
 // except according to those terms.
 
 use crate::{
-    attrs::{Attrs, Name, DEFAULT_CASING, DEFAULT_ENV_CASING},
+    attrs::{Attrs, Kind, Name, DEFAULT_CASING, DEFAULT_ENV_CASING},
     dummies,
     utils::Sp,
 };
@@ -18,8 +18,8 @@ use proc_macro2::{Span, TokenStream};
 use proc_macro_error::abort_call_site;
 use quote::quote;
 use syn::{
-    punctuated::Punctuated, spanned::Spanned, token::Comma, Attribute, Data, DataEnum, DeriveInput,
-    Fields, Ident, Variant,
+    punctuated::Punctuated, token::Comma, Attribute, Data, DataEnum, DeriveInput, Fields, Ident,
+    Variant,
 };
 
 pub fn derive_arg_enum(input: &DeriveInput) -> TokenStream {
@@ -76,15 +76,19 @@ fn lits(
 ) -> Vec<(TokenStream, Ident)> {
     variants
         .iter()
-        .flat_map(|variant| {
-            let attrs = Attrs::from_struct(
-                variant.span(),
-                &variant.attrs,
-                Name::Derived(variant.ident.clone()),
+        .filter_map(|variant| {
+            let attrs = Attrs::from_arg_enum_variant(
+                variant,
                 parent_attribute.casing(),
                 parent_attribute.env_casing(),
             );
-
+            if let Kind::Skip(_) = &*attrs.kind() {
+                None
+            } else {
+                Some((variant, attrs))
+            }
+        })
+        .flat_map(|(variant, attrs)| {
             let mut ret = vec![(attrs.cased_name(), variant.ident.clone())];
 
             attrs
@@ -118,7 +122,7 @@ fn gen_from_str(lits: &[(TokenStream, Ident)]) -> TokenStream {
 
             match input {
                 #(val if func(val, #lit) => Ok(Self::#variant),)*
-                e => unreachable!("The impossible variant have been spotted: {}", e),
+                e => Err(format!("Invalid variant: {}", e)),
             }
         }
     }

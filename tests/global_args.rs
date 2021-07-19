@@ -17,9 +17,8 @@ fn issue_1076() {
             Arg::new("GLOBAL_FLAG")
                 .long("global-flag")
                 .about("Specifies something needed by the subcommands")
-                .takes_value(true)
-                .multiple(true)
-                .global(true),
+                .global(true)
+                .takes_value(true),
         )
         .subcommand(App::new("outer").subcommand(App::new("inner")));
     let _ = app.try_get_matches_from_mut(vec!["myprog"]);
@@ -81,4 +80,19 @@ fn propagate_global_arg_to_subcommand_in_subsubcommand_2053() {
         Some("world"),
         m.subcommand_matches("test").unwrap().value_of("sub-str")
     );
+}
+
+#[test]
+fn global_arg_available_in_subcommand() {
+    let m = App::new("opt")
+        .args(&[
+            Arg::new("global").global(true).long("global"),
+            Arg::new("not").global(false).long("not"),
+        ])
+        .subcommand(App::new("ping"))
+        .get_matches_from(&["opt", "ping", "--global"]);
+
+    assert!(m.is_present("global"));
+    assert!(m.subcommand_matches("ping").unwrap().is_present("global"));
+    assert!(!m.subcommand_matches("ping").unwrap().is_present("not"));
 }

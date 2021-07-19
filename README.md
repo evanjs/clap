@@ -5,9 +5,9 @@
 [![Crates.io](https://img.shields.io/crates/d/clap?style=flat-square)](https://crates.io/crates/clap)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/clap-rs/clap/blob/master/LICENSE-APACHE)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/clap-rs/clap/blob/master/LICENSE-MIT)
+[![Build Status](https://img.shields.io/github/workflow/status/clap-rs/clap/CI/master?style=flat-square)](https://github.com/clap-rs/clap/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Coverage Status](https://img.shields.io/coveralls/github/clap-rs/clap/master?style=flat-square)](https://coveralls.io/github/clap-rs/clap?branch=master)
-[![Linux Build Status](https://img.shields.io/github/workflow/status/clap-rs/clap/CI/master?style=flat-square&logo=linux&logoColor=fff)](https://github.com/clap-rs/clap/actions/workflows/ci.yml)
-[![Windows Build Status](https://img.shields.io/azure-devops/build/clap-rs/3b9343e1-29b0-47be-acec-1edcdab69de9/1/master?style=flat-square&logo=windows)](https://dev.azure.com/clap-rs/clap/_build/latest?definitionId=1&branchName=master)
+[![Contributors](https://img.shields.io/github/contributors/clap-rs/clap?style=flat-square)](https://github.com/clap-rs/clap/graphs/contributors)
 
 Command Line Argument Parser for Rust
 
@@ -17,7 +17,7 @@ It is a simple-to-use, efficient, and full-featured library for parsing command 
 * [Questions & Discussions](https://github.com/clap-rs/clap/discussions)
 * [Website](https://clap.rs/)
 
-We are currently hard at work trying to release `3.0`. We have a `3.0.0-beta.2` prerelease out but we do not give any guarantees that it's API is stable. We do not have a changelog yet which will be written down after we are sure about the API stability. We recommend users to not update to the prerelease version yet and to wait for the official `3.0`.
+We are currently hard at work trying to release `3.0`. We have a `3.0.0-beta.2` prerelease out but we do not give any guarantees that its API is stable. We do not have a changelog yet which will be written down after we are sure about the API stability. We recommend users to not update to the prerelease version yet and to wait for the official `3.0`.
 
 > If you're looking for the readme & examples for `clap v2.33` - find it on [github](https://github.com/clap-rs/clap/tree/v2.33.0), [crates.io](https://crates.io/crates/clap/2.33.0), [docs.rs](https://docs.rs/clap/2.33.0/clap/).
 
@@ -56,7 +56,9 @@ Once `clap` parses the user provided string of arguments, it returns the matches
 
 ## FAQ
 
-For a full FAQ, see [this](FAQ.md)
+[How does `clap` compare to structopt?](https://github.com/clap-rs/clap/blob/master/FAQ.md#how-does-clap-compare-to-structopt)
+
+For a full FAQ, see [this](https://github.com/clap-rs/clap/blob/master/FAQ.md)
 
 ## Features
 
@@ -182,7 +184,7 @@ fn main() {
         0 => println!("No verbose info"),
         1 => println!("Some verbose info"),
         2 => println!("Tons of verbose info"),
-        3 | _ => println!("Don't be crazy"),
+        _ => println!("Don't be ridiculous"),
     }
 
     // You can handle information about subcommands by requesting their matches by name
@@ -229,7 +231,7 @@ fn main() {
             .index(1))
         .arg(Arg::new("v")
             .short('v')
-            .multiple(true)
+            .multiple_occurrences(true)
             .takes_value(true)
             .about("Sets the level of verbosity"))
         .subcommand(App::new("test")
@@ -256,7 +258,7 @@ fn main() {
         0 => println!("Verbose mode is off"),
         1 => println!("Verbose mode is kind of on"),
         2 => println!("Verbose mode is on"),
-        3 | _ => println!("Don't be crazy"),
+        _ => println!("Don't be crazy"),
     }
 
     // You can check for the existence of subcommands, and if found use their
@@ -464,9 +466,11 @@ Then run `cargo build` or `cargo update && cargo build` for your project.
 
 #### Features enabled by default
 
-* **derive**: Enables the custom derive (i.e. `#[derive(Clap)]`). Without this you must use one of the other methods of creating a `clap` CLI listed above
+* **derive**: Enables the custom derive (i.e. `#[derive(Clap)]`). Without this you must use one of the other methods of creating a `clap` CLI listed above.
+* **cargo**: Turns on macros that read values from `CARGO_*` environment variables.
 * **suggestions**: Turns on the `Did you mean '--myoption'?` feature for when users make typos. (builds dependency `strsim`)
 * **color**: Turns on colored error messages. You still have to turn on colored help by setting `AppSettings::ColoredHelp`. (builds dependency `termcolor`)
+* **unicode_help**: Turns on support for unicode characters in help messages. (builds dependency `textwrap`)
 
 To disable these, add this to your `Cargo.toml`:
 
@@ -474,6 +478,7 @@ To disable these, add this to your `Cargo.toml`:
 [dependencies.clap]
 version = "3.0.0-beta.2"
 default-features = false
+features = ["std"]
 ```
 
 You can also selectively enable only the features you'd like to include, by adding:
@@ -484,7 +489,7 @@ version = "3.0.0-beta.2"
 default-features = false
 
 # Cherry-pick the features you'd like to use
-features = [ "suggestions", "color" ]
+features = ["std", "suggestions", "color"]
 ```
 
 #### Opt-in features

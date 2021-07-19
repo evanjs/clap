@@ -59,15 +59,10 @@ harness = false
 name = "06_rustup"
 path = "benches/06_rustup.rs"
 
-[badges]
-is-it-maintained-issue-resolution = { repository = "clap-rs/clap" }
-is-it-maintained-open-issues = { repository = "clap-rs/clap" }
-maintenance = {status = "actively-developed"}
-
 [dependencies]
 clap_derive = { path = "./clap_derive", version = "3.0.0-beta.2", optional = true }
 bitflags = "1.2"
-textwrap = { version = "0.13.3", default-features = false, features = [] }
+textwrap = { version = "0.14.0", default-features = false, features = [] }
 indexmap = "1.0"
 os_str_bytes = { version = "3.0", features = ["raw"] }
 vec_map = "0.8"
@@ -87,7 +82,7 @@ criterion = "0.3.2"
 
 [features]
 default     = ["std", "suggestions", "color", "unicode_help", "derive", "cargo"]
-std         = [] # support for no_std in a backwards-compatible way
+std         = ["indexmap/std"] # support for no_std in a backwards-compatible way
 suggestions = ["strsim"]
 color       = ["atty", "termcolor"]
 wrap_help   = ["terminal_size", "textwrap/terminal_size"]
